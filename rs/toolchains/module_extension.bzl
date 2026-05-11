@@ -239,7 +239,7 @@ def _toolchains_impl(mctx):
                     version = base_version,
                     iso_date = iso_date,
                     sha256 = _sha_for("clippy", base_version, iso_date, exec_triple),
-                    rustc_repo_build_file = "@rustc_{}_{}//:BUILD.bazel".format(triple_suffix, version_key),
+                    rustc_sha256 = _sha_for("rustc", base_version, iso_date, exec_triple),
                 )
 
         if version in versions:
@@ -266,7 +266,7 @@ def _toolchains_impl(mctx):
                 version = base_version,
                 iso_date = iso_date,
                 sha256 = _sha_for("rustfmt", base_version, iso_date, exec_triple),
-                rustc_repo_build_file = "@rustc_{}_{}//:BUILD.bazel".format(triple_suffix, version_key),
+                rustc_sha256 = _sha_for("rustc", base_version, iso_date, exec_triple),
             )
 
     for version in rust_analyzer_versions:
