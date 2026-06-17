@@ -1,7 +1,7 @@
 """Tests for bpf-linker repository selection."""
 
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
-load(":bpf_linker_repository.bzl", "BPF_LINKER_SUPPORTED_EXEC_TRIPLES", "bpf_linker_repository_name")
+load(":bpf_linker_repository.bzl", "BPF_LINKER_SUPPORTED_EXEC_TRIPLES", "bpf_linker_binary_name", "bpf_linker_repository_name")
 
 def _bpf_linker_repository_name_test_impl(ctx):
     env = unittest.begin(ctx)
@@ -16,14 +16,27 @@ def _bpf_linker_repository_name_test_impl(ctx):
         "rs_bpf_linker_x86_64_apple_darwin",
         bpf_linker_repository_name("x86_64-apple-darwin"),
     )
-    asserts.equals(env, None, bpf_linker_repository_name("x86_64-pc-windows-msvc"))
+    asserts.equals(
+        env,
+        "rs_bpf_linker_x86_64_pc_windows_gnullvm",
+        bpf_linker_repository_name("x86_64-pc-windows-msvc"),
+    )
+    asserts.equals(
+        env,
+        "rs_bpf_linker_aarch64_pc_windows_gnullvm",
+        bpf_linker_repository_name("aarch64-pc-windows-msvc"),
+    )
+    asserts.equals(env, "bpf-linker", bpf_linker_binary_name("x86_64-apple-darwin"))
+    asserts.equals(env, "bpf-linker.exe", bpf_linker_binary_name("x86_64-pc-windows-msvc"))
     asserts.equals(env, None, bpf_linker_repository_name("riscv64gc-unknown-linux-gnu"))
     asserts.equals(
         env,
         [
             "aarch64-apple-darwin",
+            "aarch64-pc-windows-msvc",
             "aarch64-unknown-linux-gnu",
             "x86_64-apple-darwin",
+            "x86_64-pc-windows-msvc",
             "x86_64-unknown-linux-gnu",
         ],
         BPF_LINKER_SUPPORTED_EXEC_TRIPLES,

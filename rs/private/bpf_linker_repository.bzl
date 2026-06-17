@@ -1,18 +1,22 @@
 """Repository rule for downloading bpf-linker."""
 
-_BPF_LINKER_VERSION = "0.10.3"
+_BPF_LINKER_VERSION = "0.10.4"
 
 _BPF_LINKER_ARCHIVES = {
-    "aarch64-apple-darwin": "983f86e20f5353c9645e6ee314dcd897133c613315b57b00c7e75ddb507ee6a3",
-    "aarch64-unknown-linux-musl": "02f71967eddf61229fd0ae39736bfcaa00b27872df5af868b025f578371204d1",
-    "x86_64-apple-darwin": "8dbea75f14d96e84a5fe7ce6120627e3c3511a49c406e76c14d187dc191ca528",
-    "x86_64-unknown-linux-musl": "0fa4645d2dfbb5cafe6231b0aa9fad4f1430bd0871e3bd7319e82d827bf6262c",
+    "aarch64-apple-darwin": "7e0c692b2e839afdb3e2f1053bd9a94e55b99f7b6a94ef69990449a6d72837ce",
+    "aarch64-pc-windows-gnullvm": "341ea6db58a7d5ac7348d835e86a8da9ef351445704646f9632a4410d89ae60a",
+    "aarch64-unknown-linux-musl": "c3638cd3cb735ff85705905a07e0df61c0f9426480334c8e2efe5cb92fd9d3de",
+    "x86_64-apple-darwin": "55771c82883b414f3f4e8bd081a182e8deefa1b953ab249c85b253fc2b69de48",
+    "x86_64-pc-windows-gnullvm": "d3e3448333f4dd7e49103071a547ff9a944d6f277b48bdcfe9d9326dca725260",
+    "x86_64-unknown-linux-musl": "4dda77daab6c5f120a468e6d3ede2498f5bd47ece712172cfb7290176d93d015",
 }
 
 _BPF_LINKER_ARCHIVE_TRIPLES = {
     "aarch64-apple-darwin": "aarch64-apple-darwin",
+    "aarch64-pc-windows-msvc": "aarch64-pc-windows-gnullvm",
     "aarch64-unknown-linux-gnu": "aarch64-unknown-linux-musl",
     "x86_64-apple-darwin": "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc": "x86_64-pc-windows-gnullvm",
     "x86_64-unknown-linux-gnu": "x86_64-unknown-linux-musl",
 }
 
@@ -27,10 +31,13 @@ def bpf_linker_repository_name(exec_triple):
         return None
     return "rs_bpf_linker_" + archive_triple.replace("-", "_")
 
+def bpf_linker_binary_name(exec_triple):
+    return "bpf-linker.exe" if "-windows-" in exec_triple else "bpf-linker"
+
 def _bpf_linker_repository_impl(rctx):
     archive_triple = rctx.attr.archive_triple
     rctx.download_and_extract(
-        url = "https://github.com/aya-rs/bpf-linker/releases/download/v{version}/bpf-linker-{triple}.tar.gz".format(
+        url = "https://github.com/aya-rs/bpf-linker/releases/download/v{version}/bpf-linker-{triple}.tar.zst".format(
             version = _BPF_LINKER_VERSION,
             triple = archive_triple,
         ),
@@ -38,12 +45,7 @@ def _bpf_linker_repository_impl(rctx):
     )
     rctx.file(
         "BUILD.bazel",
-        """\
-exports_files(
-    ["bpf-linker"],
-    visibility = ["//visibility:public"],
-)
-""",
+        'exports_files(["%s"])\n' % bpf_linker_binary_name(archive_triple),
     )
 
     return rctx.repo_metadata(reproducible = True)

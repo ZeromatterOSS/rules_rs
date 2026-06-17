@@ -1,7 +1,7 @@
 load("@rules_rust//rust:toolchain.bzl", "rust_toolchain")
 load("@rules_rust//rust/platform:triple.bzl", _parse_triple = "triple")
 load("//rs/platforms:triples.bzl", "ALL_TARGET_TRIPLES", "SUPPORTED_EXEC_TRIPLES", "SUPPORTED_TIER_3_TRIPLES", "triple_to_rust_constraint_set")
-load("//rs/private:bpf_linker_repository.bzl", "bpf_linker_repository_name")
+load("//rs/private:bpf_linker_repository.bzl", "bpf_linker_binary_name", "bpf_linker_repository_name")
 load("//rs/toolchains:toolchain_utils.bzl", "sanitize_triple", "sanitize_version")
 
 _BPF_TARGET_TRIPLES = [
@@ -176,29 +176,21 @@ def declare_rustc_toolchains(
             **rust_toolchain_kwargs
         )
 
-        # FIXME: bpf_linker_repository_name returns None for Windows until
-        # bpf-linker publishes Windows prebuilts.
-        bpf_linker_repo = bpf_linker_repository_name(triple)
-        if bpf_linker_repo:
-            bpf_rust_toolchain_kwargs = rust_toolchain_kwargs | {
+        bpf_linker = "@%s//:%s" % (bpf_linker_repository_name(triple), bpf_linker_binary_name(triple))
+        rust_toolchain(
+            name = rust_toolchain_name + "_bpf",
+            linker_preference = "rust",
+            process_wrapper = "@rules_rust//util/process_wrapper",
+            rust_std = toolchain_rust_std,
+            **(rust_toolchain_kwargs | {
                 "linker": select({
-                    "@platforms//cpu:bpfeb": "@{}//:bpf-linker".format(bpf_linker_repo),
-                    "@platforms//cpu:bpfel": "@{}//:bpf-linker".format(bpf_linker_repo),
+                    "@platforms//cpu:bpfeb": bpf_linker,
+                    "@platforms//cpu:bpfel": bpf_linker,
                 }),
-            }
-
-            rust_toolchain(
-                name = rust_toolchain_name + "_bpf",
-                linker_preference = "rust",
-                process_wrapper = "@rules_rust//util/process_wrapper",
-                rust_std = toolchain_rust_std,
-                **bpf_rust_toolchain_kwargs
-            )
+            })
+        )
 
         for target_triple in targets:
-            if target_triple in _BPF_TARGET_TRIPLES and not bpf_linker_repo:
-                continue
-
             target_key = sanitize_triple(target_triple)
 
             native.toolchain(
