@@ -232,10 +232,18 @@ crate.annotation(
     },
 )
 crate.annotation(
-    # Smoketest that we do something reasonable with this attribute
+    # Smoke test the select attributes.
+    build_script_data_select = {
+        "aarch64-apple-darwin": ["//:main.rs"],
+        "x86_64-unknown-linux-gnu": ["//:dummy_test.sh"],
+    },
     build_script_env_select = {
         "aarch64-apple-darwin": '{"OS": "darwin"}',
         "x86_64-unknown-linux-musl": '{"OS": "linux"}',
+    },
+    build_script_tools_select = {
+        "aarch64-apple-darwin": ["//:main.rs"],
+        "x86_64-unknown-linux-gnu": ["//:dummy_test.sh"],
     },
     crate = "bitflags",
     repositories = ["build_script_env_select"],
@@ -390,8 +398,6 @@ clang++: error: no such file or directory: 'bcrypt.lib'
 #    gen_build_script = "off",
 #    deps = ["@mimalloc"],
 #)
-
-inject_repo(crate, "mimalloc")
 
 include("//:3rd_party/libz-sys/include.MODULE.bazel")
 include("//:3rd_party/libgit2-sys/include.MODULE.bazel")

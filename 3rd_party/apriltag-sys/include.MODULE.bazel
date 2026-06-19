@@ -17,10 +17,12 @@ cc_library(
         ],
     ),
     includes = ["apriltag-src"],
+    visibility = ["//visibility:public"],
 )""",
     crate = "apriltag-sys",
+    extra_aliased_targets = {"apriltags_cc": "apriltags"},
     gen_build_script = "off",
-    deps = [
-        ":apriltags",
-    ],
+    repositories = ["many_workspace_deps"],
+    version = "0.3.0",
+    deps = ["@many_workspace_deps//:apriltags_cc-0.3.0"],
 )

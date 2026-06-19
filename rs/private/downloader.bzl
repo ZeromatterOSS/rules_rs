@@ -57,7 +57,7 @@ def start_github_downloads(
         if key in existing_facts:
             continue
 
-        annotation = annotation_for(annotations, name, package["version"])
+        annotation = annotation_for(annotations, name, package["version"], package["hub_name"])
         url = _github_source_to_raw_content_base_url(source) + annotation.workspace_cargo_toml
         in_flight_fetch = state.in_flight_git_crate_fetches_by_url.get(url)
         if in_flight_fetch:
@@ -285,7 +285,7 @@ def download_metadata_for_git_crates(
             annotations = _annotations_for_package(annotations_by_hub_name, package)
 
             if cargo_toml_json.get("package", {}).get("name") != name:
-                annotation = annotation_for(annotations, name, package["version"])
+                annotation = annotation_for(annotations, name, package["version"], package["hub_name"])
                 strip_prefix = _compute_strip_prefix(annotation, cargo_toml_json, name)
 
                 if not strip_prefix:
@@ -322,7 +322,7 @@ def download_metadata_for_git_crates(
         # TODO(zbarsky): multiple crates?
         first_pkg = clone_state.packages[0]
         annotations = _annotations_for_package(annotations_by_hub_name, first_pkg)
-        annotation = annotation_for(annotations, first_pkg["name"], first_pkg["version"])
+        annotation = annotation_for(annotations, first_pkg["name"], first_pkg["version"], first_pkg["hub_name"])
         cargo_toml_path = clone_dir.get_child(annotation.workspace_cargo_toml)
         _ensure_cargo_toml_exists(cargo_toml_path, clone_state)
         cargo_toml_json = run_toml2json(mctx, cargo_toml_path)
@@ -333,7 +333,7 @@ def download_metadata_for_git_crates(
             annotations = _annotations_for_package(annotations_by_hub_name, package)
 
             if cargo_toml_json.get("package", {}).get("name") != name:
-                annotation = annotation_for(annotations, name, package["version"])
+                annotation = annotation_for(annotations, name, package["version"], package["hub_name"])
                 strip_prefix = _compute_strip_prefix(annotation, cargo_toml_json, name)
 
                 if not strip_prefix:

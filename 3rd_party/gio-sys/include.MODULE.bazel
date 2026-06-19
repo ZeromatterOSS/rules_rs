@@ -16,5 +16,3 @@ crate.annotation(
     gen_build_script = "off",
     deps = ["@glib//gobject"],
 )
-
-inject_repo(crate, "glib")

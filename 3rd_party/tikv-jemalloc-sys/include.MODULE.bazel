@@ -6,5 +6,3 @@ crate.annotation(
     gen_build_script = "off",
     deps = ["@jemalloc"],
 )
-
-inject_repo(crate, "jemalloc")

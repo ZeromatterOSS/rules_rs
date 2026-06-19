@@ -56,35 +56,44 @@ def _crate_annotation(
 
 _DEFAULT_CRATE_ANNOTATION = _crate_annotation()
 
-_WINDOWS_GNULLVM_IMPLICIT_ANNOTATION = _crate_annotation(
-    additive_build_file_content = """
+_WINDOWS_GNULLVM_ADDITIVE_BUILD_FILE_CONTENT = """
 load("@rules_cc//cc:defs.bzl", "cc_import")
 
 cc_import(
     name = "windows_import_lib",
     static_library = glob(["lib/*.a"])[0],
+    visibility = ["//visibility:public"],
 )
-""",
-    gen_build_script = "off",
-    deps = [":windows_import_lib"],
-)
+"""
 
-_IMPLICIT_ANNOTATIONS_BY_CRATE = {
+def _windows_gnullvm_implicit_annotation(crate_name, version, hub_name):
+    alias_name = crate_name + "_import_lib"
+    return _crate_annotation(
+        additive_build_file_content = _WINDOWS_GNULLVM_ADDITIVE_BUILD_FILE_CONTENT,
+        gen_build_script = "off",
+        deps = ["@%s//:%s-%s" % (hub_name, alias_name, version)],
+        extra_aliased_targets = {
+            alias_name: "windows_import_lib",
+        },
+    )
+
+_WINDOWS_GNULLVM_CRATES = [
     # These crates publish the needed import library in their package archive.
-    # Treat the well-known snippet as a built-in default so users do not need
-    # to include it manually.
-    "windows_aarch64_gnullvm": _WINDOWS_GNULLVM_IMPLICIT_ANNOTATION,
-    "windows_x86_64_gnullvm": _WINDOWS_GNULLVM_IMPLICIT_ANNOTATION,
-}
+    # Apply the annotation by default so users do not need to add it.
+    "windows_aarch64_gnullvm",
+    "windows_x86_64_gnullvm",
+]
 
-def annotation_for(annotations_by_crate, crate_name, version):
+def annotation_for(annotations_by_crate, crate_name, version, hub_name):
     """Return the annotation matching crate/version, falling back to '*' or default."""
     version_map = annotations_by_crate.get(crate_name, {})
-    return (
-        version_map.get(version) or
-        version_map.get("*") or
-        _IMPLICIT_ANNOTATIONS_BY_CRATE.get(crate_name, _DEFAULT_CRATE_ANNOTATION)
-    )
+    annotation = version_map.get(version) or version_map.get("*")
+    if annotation:
+        return annotation
+
+    if crate_name in _WINDOWS_GNULLVM_CRATES:
+        return _windows_gnullvm_implicit_annotation(crate_name, version, hub_name)
+    return _DEFAULT_CRATE_ANNOTATION
 
 def build_annotation_map(mod, cfg_name):
     """Build mapping {crate: {version|\"*\": annotation}} for a cfg name."""

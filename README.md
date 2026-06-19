@@ -126,6 +126,15 @@ https://bazelbuild.github.io/rules_rust/rust_analyzer.html#vscode
 ## Advanced Options
 
 <details>
+<summary>Reference targets added by <code>crate.annotation</code></summary>
+
+Label attributes in `crate.annotation` are resolved in `MODULE.bazel`, so a relative label does not refer to the generated crate package. Use `extra_aliased_targets` to expose a public target from the generated crate package under an explicit name in the hub repository, then use that hub label. The repository name is the `name` passed to `crate.from_cargo`.
+
+See [`3rd_party/apriltag-sys/include.MODULE.bazel`](3rd_party/apriltag-sys/include.MODULE.bazel) for an example.
+
+</details>
+
+<details>
 <summary>Use legacy rules_rust toolchains or platforms</summary>
 
 You can keep an existing `rules_rust` toolchain setup during migration. In that mode, configure toolchains from `@rules_rust` and tell `crate.from_cargo(...)` to render selects against legacy `rules_rust` platform labels.

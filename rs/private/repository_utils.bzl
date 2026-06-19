@@ -1,6 +1,9 @@
 load(":select_utils.bzl", "compute_select")
 load(":semver.bzl", "parse_full_version")
 
+# Bazel 8 does not define attr.label_list_dict.
+_label_list_dict = getattr(attr, "label_list_dict", attr.string_list_dict)
+
 def _platform(triple, use_legacy_rules_rust_platforms):
     if use_legacy_rules_rust_platforms:
         return "@rules_rust//rust/platform:" + triple.replace("-musl", "-gnu").replace("-gnullvm", "-msvc")
@@ -14,7 +17,13 @@ def _format_branches(branches):
     )
 
 def render_select(non_platform_items, platform_items, use_legacy_rules_rust_platforms):
+    non_platform_items = [str(item) for item in non_platform_items]
+    platform_items = {
+        platform: [str(item) for item in items]
+        for platform, items in platform_items.items()
+    }
     common_items, branches = compute_select(non_platform_items, platform_items)
+    common_items = list(common_items)
 
     if not branches:
         return common_items, ""
@@ -179,7 +188,7 @@ _RUST_CRATE_MACRO_CALL = """{indent}rust_crate(
 {indent}    target_compatible_with = RESOLVED_PLATFORMS,
 {indent}    links = {links},
 {indent}    build_script = {build_script},
-{indent}    build_script_data = {build_script_data},
+{indent}    build_script_data = {build_script_data}{conditional_build_script_data},
 {indent}    build_deps = [
 {indent}        {build_deps}
 {indent}    ]{conditional_build_deps},
@@ -237,7 +246,7 @@ def render_rust_crate_call(attr, values, bazel_metadata = {}, extra_deps = "", i
         deps = list_indent.join(['"%s"' % d for d in sorted(deps)]),
         extra_deps = extra_deps,
         conditional_deps = " + " + conditional_deps if conditional_deps else "",
-        data = list_indent.join(['"%s"' % d for d in attr.data]),
+        data = list_indent.join(['"%s"' % str(d) for d in attr.data]),
         extra_compile_data_attr = extra_compile_data_attr,
         crate_features = repr(sorted(crate_features)),
         triples = repr(attr.crate_features_select.keys()),
@@ -250,7 +259,7 @@ def render_rust_crate_call(attr, values, bazel_metadata = {}, extra_deps = "", i
         tags = repr(attr.crate_tags),
         links = values["links"],
         build_script = values["build_script"],
-        build_script_data = repr([str(t) for t in build_script_data]),
+        build_script_data = repr(build_script_data),
         conditional_build_script_data = " + " + conditional_build_script_data if conditional_build_script_data else "",
         build_deps = list_indent.join(['"%s"' % d for d in sorted(build_deps)]),
         conditional_build_deps = " + " + conditional_build_deps if conditional_build_deps else "",
@@ -258,7 +267,7 @@ def render_rust_crate_call(attr, values, bazel_metadata = {}, extra_deps = "", i
         conditional_build_script_env = " | " + conditional_build_script_env if conditional_build_script_env else "",
         allow_build_script_to_detect_nonhermetic_paths = repr(attr.allow_build_script_to_detect_nonhermetic_paths),
         build_script_toolchains = repr([str(t) for t in attr.build_script_toolchains]),
-        build_script_tools = repr([str(t) for t in build_script_tools]),
+        build_script_tools = repr(build_script_tools),
         conditional_build_script_tools = " + " + conditional_build_script_tools if conditional_build_script_tools else "",
         build_script_tags = repr(attr.build_script_tags),
         is_proc_macro = values["is_proc_macro"],
@@ -288,23 +297,23 @@ load("@{hub_name}//:defs.bzl", "RESOLVED_PLATFORMS")
 rust_crate_attrs = {
     "hub_name": attr.string(),
     "gen_build_script": attr.string(),
-    "build_script_deps": attr.label_list(default = []),
-    "build_script_deps_select": attr.string_list_dict(),
-    "build_script_data": attr.label_list(default = []),
-    "build_script_data_select": attr.string_list_dict(),
+    "build_script_deps": attr.label_list(),
+    "build_script_deps_select": _label_list_dict(),
+    "build_script_data": attr.label_list(),
+    "build_script_data_select": _label_list_dict(),
     "build_script_env": attr.string_dict(),
     "build_script_env_select": attr.string_dict(),
     "allow_build_script_to_detect_nonhermetic_paths": attr.bool(default = False),
     "build_script_toolchains": attr.label_list(),
-    "build_script_tools": attr.label_list(default = []),
-    "build_script_tools_select": attr.string_list_dict(),
+    "build_script_tools": attr.label_list(),
+    "build_script_tools_select": _label_list_dict(),
     "build_script_tags": attr.string_list(),
     "rustc_flags": attr.string_list(),
     "rustc_flags_select": attr.string_list_dict(),
     "crate_tags": attr.string_list(),
-    "data": attr.label_list(default = []),
-    "deps": attr.string_list(default = []),
-    "deps_select": attr.string_list_dict(),
+    "data": attr.label_list(),
+    "deps": attr.label_list(),
+    "deps_select": _label_list_dict(),
     "aliases": attr.string_dict(),
     "crate_features": attr.string_list(),
     "crate_features_select": attr.string_list_dict(),
