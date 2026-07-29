@@ -24,7 +24,7 @@ load("//rs/private:git_cargo_workspace_repository.bzl", "git_cargo_workspace_rep
 load("//rs/private:git_crate_metadata_repository.bzl", "git_crate_metadata_repository")
 load("//rs/private:lint_flags.bzl", "cargo_toml_lint_flags")
 load("//rs/private:registry_config_repository.bzl", "registry_config_repository")
-load("//rs/private:registry_utils.bzl", "CRATES_IO_REGISTRY", "registry_config_repo_name")
+load("//rs/private:registry_utils.bzl", "CRATES_IO_REGISTRY", "registry_config_repo_name", "resolve_registry_source")
 load("//rs/private:repository_utils.bzl", "render_select")
 load("//rs/private:toml2json.bzl", "run_toml2json")
 
@@ -126,7 +126,8 @@ def _generate_hub_and_spokes(
 
     mctx.report_progress("Reading workspace metadata")
     result = mctx.execute(
-        [cargo_path, "metadata", "--no-deps", "--locked", "--format-version=1", "--quiet"],
+        [cargo_path, "metadata", "--no-deps", "--locked", "--format-version=1", "--quiet"] +
+        (["--config", str(mctx.path(cargo_config))] if cargo_config else []),
         working_directory = str(mctx.path(cargo_lock_path).dirname),
     )
     if result.return_code != 0:
@@ -165,16 +166,14 @@ def _generate_hub_and_spokes(
                 package["download_token"].wait()
 
                 # TODO(zbarsky): Should we also dedupe this parsing?
-                metadatas = mctx.read(name + ".jsonl").strip().split("\n")
-                version_needle = '"vers":"%s"' % version
-                for metadata in metadatas:
-                    if version_needle not in metadata:
+                for line in mctx.read(name + ".jsonl").strip().split("\n"):
+                    if version not in line:
                         continue
-                    metadata = json.decode(metadata)
+                    metadata = json.decode(line)
                     if metadata["vers"] != version:
                         continue
 
-                    features = metadata["features"]
+                    features = metadata.get("features") or {}
 
                     # Crates published with newer Cargo populate this field for `resolver = "2"`.
                     # It can express more nuanced feature dependencies and overrides the keys from legacy features, if present.
@@ -201,6 +200,10 @@ def _generate_hub_and_spokes(
 
                     # Nest a serialized JSON since max path depth is 5.
                     facts[key] = json.encode(fact)
+                    break
+
+                if fact == None:
+                    fail("Sparse registry %s has no metadata for %s %s" % (source, name, version))
         elif source.startswith("path+"):
             # Always re-read a path dependency's Cargo.toml instead of using cached facts.
             # Path dependencies are local, and Cargo.toml can change features or
@@ -653,11 +656,18 @@ def _crate_impl(mctx):
             annotations_by_hub_name[cfg.name] = annotations
             mctx.watch(cfg.cargo_lock)
             mctx.watch(cfg.cargo_toml)
+            cargo_config = {}
+            if cfg.cargo_config:
+                mctx.watch(cfg.cargo_config)
+                cargo_config = run_toml2json(mctx, cfg.cargo_config)
             cargo_toml_by_hub_name[cfg.name] = run_toml2json(mctx, cfg.cargo_toml)
             cargo_lock = run_toml2json(mctx, cfg.cargo_lock)
             parsed_packages = cargo_lock.get("package", [])
             for package in parsed_packages:
                 package["hub_name"] = cfg.name
+                source = resolve_registry_source(package.get("source"), cargo_config)
+                if source:
+                    package["source"] = source
             packages_by_hub_name[cfg.name] = parsed_packages
 
             # Process git downloads first because they may require a followup download if the repo is a workspace,
@@ -678,16 +688,11 @@ def _crate_impl(mctx):
 
             cargo_credentials_by_hub_name[cfg.name] = cargo_credentials
             packages = packages_by_hub_name[cfg.name]
-            registry_sources = set()
-
-            for package in packages:
-                source = package.get("source")
-                if source == "registry+https://github.com/rust-lang/crates.io-index":
-                    source = CRATES_IO_REGISTRY
-                    package["source"] = source
-
-                if source and source.startswith("sparse+"):
-                    registry_sources.add(source)
+            registry_sources = set([
+                package["source"]
+                for package in packages
+                if package.get("source") and package["source"].startswith("sparse+")
+            ])
 
             start_crate_registry_downloads(mctx, downloader_state, annotations, packages, cargo_credentials, cfg.debug)
 

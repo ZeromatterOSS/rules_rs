@@ -1,5 +1,47 @@
 load("@bazel_skylib//lib:unittest.bzl", "asserts", "unittest")
-load(":registry_utils.bzl", "registry_download_url")
+load(":registry_utils.bzl", "CRATES_IO_REGISTRY", "registry_download_url", "resolve_registry_source")
+
+def _registry_source_resolution_impl(ctx):
+    env = unittest.begin(ctx)
+    crates_io = "registry+https://github.com/rust-lang/crates.io-index"
+    source = "sparse+https://registry.example/index/"
+
+    for lock_source, cargo_config, expected in [
+        (None, {}, None),
+        (crates_io, {}, CRATES_IO_REGISTRY),
+        (source, {}, source),
+        ("registry+" + source, {}, source),
+        (
+            crates_io,
+            {"source": {
+                "crates-io": {"replace-with": "artifactory"},
+                "artifactory": {"registry": source},
+            }},
+            source,
+        ),
+        (
+            crates_io,
+            {
+                "source": {"crates-io": {"replace-with": "artifactory"}},
+                "registries": {"artifactory": {"index": source}},
+            },
+            source,
+        ),
+        (
+            crates_io,
+            {"source": {
+                "crates-io": {"replace-with": "mirror"},
+                "mirror": {"replace-with": "artifactory"},
+                "artifactory": {"registry": source},
+            }},
+            source,
+        ),
+    ]:
+        asserts.equals(env, expected, resolve_registry_source(lock_source, cargo_config))
+
+    return unittest.end(env)
+
+registry_source_resolution_test = unittest.make(_registry_source_resolution_impl)
 
 def _registry_download_url_uses_directory_prefix_impl(ctx):
     env = unittest.begin(ctx)
@@ -27,5 +69,6 @@ registry_download_url_uses_directory_prefix_test = unittest.make(_registry_downl
 def registry_utils_tests():
     return unittest.suite(
         "registry_utils_tests",
+        registry_source_resolution_test,
         registry_download_url_uses_directory_prefix_test,
     )
