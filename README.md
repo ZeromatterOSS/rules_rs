@@ -367,6 +367,3 @@ See https://registry.bazel.build/docs/rules_rs
 - [Etsy](https://www.etsy.com/)
 - [Aya](https://github.com/aya-rs/aya) and [bpf-linker](https://github.com/aya-rs/bpf-linker)
 
-## Telemetry And Privacy Policy
-
-This ruleset collects limited usage data via [`tools_telemetry`](https://github.com/aspect-build/tools_telemetry), which is reported to Aspect Build Inc and governed by their [privacy policy](https://www.aspect.build/privacy-policy).
