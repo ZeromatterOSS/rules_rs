@@ -382,4 +382,5 @@ See https://registry.bazel.build/docs/rules_rs
 - [Selenium](https://github.com/SeleniumHQ/selenium)
 - [Etsy](https://www.etsy.com/)
 - [Aya](https://github.com/aya-rs/aya) and [bpf-linker](https://github.com/aya-rs/bpf-linker)
+- [Xybrid](https://github.com/xybrid-ai/xybrid)
 
