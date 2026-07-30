@@ -55,9 +55,9 @@ bzl_library(
     deps = [
         ":toolchain_utils",
         "//rs/platforms:triples",
+        "//rs/private:rust_repository_utils",
         "@rules_rust//rust:bzl_lib",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -93,7 +93,6 @@ bzl_library(
         "//rs/private:toolchains_repository",
         "@bazel_features//:features",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 

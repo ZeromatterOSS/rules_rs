@@ -1,12 +1,6 @@
 """Module extension for configuring rules_rs Rust toolchains."""
 
 load("@rules_rust//rust/platform:triple.bzl", _parse_triple = "triple")
-load(
-    "@rules_rust//rust/private:repository_utils.bzl",
-    "DEFAULT_STATIC_RUST_URL_TEMPLATES",
-    "check_version_valid",
-    "produce_tool_suburl",
-)
 load("//rs/experimental/miri/private:miri_repository.bzl", "miri_repository")
 load("//rs/platforms:triples.bzl", "SUPPORTED_EXEC_TRIPLES", "SUPPORTED_TIER_1_AND_2_TRIPLES")
 load("//rs/private:bpf_linker_repository.bzl", "BPF_LINKER_SUPPORTED_EXEC_TRIPLES", "declare_bpf_linker_repository")
@@ -14,6 +8,7 @@ load("//rs/private:cargo_repository.bzl", "cargo_repository")
 load("//rs/private:clippy_repository.bzl", "clippy_repository")
 load("//rs/private:host_tools_repository.bzl", "host_tools_repository")
 load("//rs/private:rust_analyzer_repository.bzl", "rust_analyzer_repository")
+load("//rs/private:rust_repository_utils.bzl", "DEFAULT_STATIC_RUST_URL_TEMPLATES", "check_version_valid", "produce_tool_suburl")
 load("//rs/private:rust_src_repository.bzl", "rust_src_repository")
 load("//rs/private:rustc_repository.bzl", "rustc_repository")
 load("//rs/private:rustc_src_repository.bzl", "rustc_src_repository")

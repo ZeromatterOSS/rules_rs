@@ -1,10 +1,5 @@
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "get_auth")
-load(
-    "@rules_rust//rust/private:repository_utils.bzl",
-    "DEFAULT_STATIC_RUST_URL_TEMPLATES",
-    "produce_tool_path",
-    "produce_tool_suburl",
-)
+load(":rust_repository_utils.bzl", "DEFAULT_STATIC_RUST_URL_TEMPLATES", "produce_tool_path", "produce_tool_suburl")
 
 def _rust_src_repository_impl(rctx):
     tool_suburl = produce_tool_suburl("rust-src", None, rctx.attr.version, rctx.attr.iso_date)

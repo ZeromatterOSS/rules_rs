@@ -1,9 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_tools//tools/build_defs/repo:utils.bzl", "get_auth")
-load(
-    "@rules_rust//rust/private:repository_utils.bzl",
-    "DEFAULT_STATIC_RUST_URL_TEMPLATES",
-)
 load("//rs/platforms:triples.bzl", "ALL_TARGET_TRIPLES")
 load(
     "//rs/private:cargo_workspace_graph.bzl",
@@ -17,6 +13,7 @@ load(
     "workspace_dep_data",
 )
 load("//rs/private:repository_utils.bzl", "cargo_build_file_values", "inherit_workspace_package_fields", "render_rust_crate_call")
+load("//rs/private:rust_repository_utils.bzl", "DEFAULT_STATIC_RUST_URL_TEMPLATES")
 load("//rs/private:toml2json.bzl", "run_toml2json")
 
 _SOURCE_ROOT = "src"

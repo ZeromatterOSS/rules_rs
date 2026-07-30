@@ -9,6 +9,7 @@ load(":cargo_workspace_graph_test.bzl", "cargo_workspace_graph_tests")
 load(":cfg_parser_test.bzl", "cfg_parser_tests")
 load(":lint_flags_test.bzl", "lint_flags_tests")
 load(":registry_utils_test.bzl", "registry_utils_tests")
+load(":rust_repository_utils_test.bzl", "rust_repository_utils_tests")
 load(":semver_test.bzl", "semver_select_tests")
 
 bool_setting(
@@ -38,6 +39,8 @@ cfg_parser_tests()
 lint_flags_tests()
 
 registry_utils_tests()
+
+rust_repository_utils_tests()
 
 semver_select_tests()
 
@@ -219,8 +222,8 @@ bzl_library(
     srcs = ["cargo_repository.bzl"],
     visibility = ["//rs:__subpackages__"],
     deps = [
+        ":rust_repository_utils",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -231,7 +234,6 @@ bzl_library(
     deps = [
         "//rs/private:rust_repository_utils",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -242,7 +244,6 @@ bzl_library(
     deps = [
         "//rs/private:rust_repository_utils",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -253,7 +254,6 @@ bzl_library(
     deps = [
         "//rs/private:rust_repository_utils",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -262,8 +262,8 @@ bzl_library(
     srcs = ["rust_src_repository.bzl"],
     visibility = ["//rs:__subpackages__"],
     deps = [
+        ":rust_repository_utils",
         "@bazel_tools//tools/build_defs/repo:utils.bzl",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -274,11 +274,11 @@ bzl_library(
     deps = [
         ":cargo_workspace_graph",
         ":repository_utils",
+        ":rust_repository_utils",
         ":toml2json",
         "//rs/platforms:triples",
         "@bazel_skylib//lib:paths",
         "@bazel_tools//tools/build_defs/repo:utils.bzl",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -289,7 +289,6 @@ bzl_library(
     deps = [
         "//rs/private:rust_repository_utils",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -300,7 +299,6 @@ bzl_library(
     deps = [
         "//rs/private:rust_repository_utils",
         "@rules_rust//rust/platform:bzl_lib",
-        "@rules_rust//rust/private:bzl_lib",
     ],
 )
 
@@ -321,7 +319,17 @@ bzl_library(
     visibility = ["//rs:__subpackages__"],
     deps = [
         "@bazel_tools//tools/build_defs/repo:utils.bzl",
-        "@rules_rust//rust/private:bzl_lib",
+        "@rules_rust//rust/platform:bzl_lib",
+    ],
+)
+
+bzl_library(
+    name = "rust_repository_utils_test",
+    srcs = ["rust_repository_utils_test.bzl"],
+    deps = [
+        ":rust_repository_utils",
+        "@bazel_skylib//lib:unittest",
+        "@rules_rust//rust/platform:bzl_lib",
     ],
 )
 

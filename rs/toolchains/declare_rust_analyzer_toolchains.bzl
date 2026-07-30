@@ -1,10 +1,7 @@
 load("@rules_rust//rust:toolchain.bzl", "rust_analyzer_toolchain")
 load("@rules_rust//rust/platform:triple.bzl", _parse_triple = "triple")
-load(
-    "@rules_rust//rust/private:repository_utils.bzl",
-    "includes_rust_analyzer_proc_macro_srv",
-)
 load("//rs/platforms:triples.bzl", "SUPPORTED_EXEC_TRIPLES")
+load("//rs/private:rust_repository_utils.bzl", "includes_rust_analyzer_proc_macro_srv")
 load("//rs/toolchains:toolchain_utils.bzl", "sanitize_version")
 
 def _channel(version):
