@@ -157,7 +157,7 @@ You can keep an existing `rules_rust` toolchain setup during migration. In that 
 rules_rust = use_extension("@rules_rs//rs:rules_rust.bzl", "rules_rust")
 use_repo(rules_rust, "rules_rust")
 
-rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+rust = use_extension("@rules_rs//rs:rules_rust_reexported_extensions.bzl", "rust")
 rust.toolchain(
     edition = "2024",
     versions = ["1.92.0"],
