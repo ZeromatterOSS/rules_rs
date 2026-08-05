@@ -194,6 +194,7 @@ _RUST_CRATE_MACRO_CALL = """{indent}rust_crate(
 {indent}        {build_deps}
 {indent}    ]{conditional_build_deps},
 {indent}    build_script_env = {build_script_env}{conditional_build_script_env},
+{indent}    build_script_env_files = {build_script_env_files},
 {indent}    allow_build_script_to_detect_nonhermetic_paths = {allow_build_script_to_detect_nonhermetic_paths},
 {indent}    build_script_toolchains = {build_script_toolchains},
 {indent}    build_script_tools = {build_script_tools}{conditional_build_script_tools},
@@ -218,6 +219,7 @@ def render_rust_crate_call(attr, values, bazel_metadata = {}, extra_deps = "", i
     build_script_tools, conditional_build_script_tools = render_select(attr.build_script_tools, attr.build_script_tools_select, use_legacy_rules_rust_platforms)
     rustc_flags, conditional_rustc_flags = render_select(attr.rustc_flags, attr.rustc_flags_select, use_legacy_rules_rust_platforms)
     deps, conditional_deps = render_select(attr.deps + bazel_metadata.get("deps", []), attr.deps_select, use_legacy_rules_rust_platforms)
+    build_script_env_files = getattr(attr, "build_script_env_files", []) + ["cargo_toml_env_vars.env"]
 
     conditional_build_script_env = render_select_build_script_env(attr.build_script_env_select, use_legacy_rules_rust_platforms)
 
@@ -267,6 +269,7 @@ def render_rust_crate_call(attr, values, bazel_metadata = {}, extra_deps = "", i
         conditional_build_deps = " + " + conditional_build_deps if conditional_build_deps else "",
         build_script_env = repr(cargo_manifest_env | attr.build_script_env),
         conditional_build_script_env = " | " + conditional_build_script_env if conditional_build_script_env else "",
+        build_script_env_files = repr([str(f) for f in build_script_env_files]),
         allow_build_script_to_detect_nonhermetic_paths = repr(attr.allow_build_script_to_detect_nonhermetic_paths),
         build_script_toolchains = repr([str(t) for t in attr.build_script_toolchains]),
         build_script_tools = repr(build_script_tools),
@@ -305,6 +308,9 @@ rust_crate_attrs = {
     "build_script_data_select": _label_list_dict(),
     "build_script_env": attr.string_dict(),
     "build_script_env_select": attr.string_dict(),
+    "build_script_env_files": attr.label_list(
+        allow_files = True,
+    ),
     "allow_build_script_to_detect_nonhermetic_paths": attr.bool(default = False),
     "build_script_toolchains": attr.label_list(),
     "build_script_tools": attr.label_list(),

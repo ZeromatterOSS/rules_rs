@@ -327,6 +327,7 @@ crate.annotation(
             build_script_data = annotation.build_script_data,
             build_script_data_select = annotation.build_script_data_select,
             build_script_env = annotation.build_script_env,
+            build_script_env_files = annotation.build_script_env_files,
             allow_build_script_to_detect_nonhermetic_paths = annotation.allow_build_script_to_detect_nonhermetic_paths,
             build_script_toolchains = annotation.build_script_toolchains,
             build_script_tools = annotation.build_script_tools,
@@ -951,6 +952,10 @@ _annotation = tag_class(
         ),
         "build_script_env_select": attr.string_dict(
             doc = "Additional environment variables to set on a crate's `cargo_build_script::env` attribute. Key should be the platform triplet. Value should be a JSON encoded dictionary mapping variable names to values, for example `{\"FOO\": \"bar\"}`.",
+        ),
+        "build_script_env_files": attr.label_list(
+            doc = "Files containing additional environment variables for a crate's `cargo_build_script`.",
+            allow_files = True,
         ),
         "allow_build_script_to_detect_nonhermetic_paths": attr.bool(
             default = False,
