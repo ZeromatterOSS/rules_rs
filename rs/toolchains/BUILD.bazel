@@ -3,6 +3,11 @@ load(":toolchain_config_test.bzl", "toolchain_config_tests")
 
 package(default_visibility = ["//visibility:public"])
 
+config_setting(
+    name = "msvc_targets",
+    constraint_values = ["@llvm//constraints/windows/abi:msvc"],
+)
+
 alias(
     name = "all_targets",
     actual = select({
@@ -27,6 +32,7 @@ alias(
     actual = select({
         # UEFI has separate toolchains with an explicit Rust linker preference.
         "@platforms//os:uefi": "//rs/platforms/config:bpfeb-unknown-none",
+        "@llvm//constraints/windows/abi:msvc": "//rs/platforms/config:bpfeb-unknown-none",
         # Select the opposite BPF config setting so non_bpf_targets does not
         # match either BPF target.
         "//rs/platforms/config:bpfeb-unknown-none": "//rs/platforms/config:bpfel-unknown-none",

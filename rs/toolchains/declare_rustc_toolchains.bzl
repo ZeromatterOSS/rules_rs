@@ -268,22 +268,25 @@ def declare_rustc_toolchains(
             **rust_toolchain_kwargs
         )
 
-        # Keep the default linker preference unset for ordinary targets. An
-        # explicit "cc" requires a C/C++ toolchain even during analysis.
-        for bootstrapping in [False, True]:
-            rust_toolchain(
-                name = rust_toolchain_name + "_uefi" + ("_bootstrap" if bootstrapping else ""),
-                bootstrapping = bootstrapping,
-                process_wrapper = "@rules_rust//util/process_wrapper" + (":bootstrap_process_wrapper" if bootstrapping else ""),
-                rust_std = rust_std_label if bootstrapping else toolchain_rust_std,
-                **(rust_toolchain_kwargs | {
-                    "linker_preference": "rust",
-                    "linker": lld_label,
-                    # UEFI has no C/C++ allocator shim or weak symbol support.
-                    "allocator_library": "@rules_rust//rust/private/cc:empty",
-                    "global_allocator_library": "@rules_rust//rust/private/cc:empty",
-                })
-            )
+        # Keep the default preference unset for ordinary targets. MSVC needs
+        # a direct linker because Rust emits link.exe arguments, not clang-cl
+        # driver arguments. Both MSVC and UEFI also need this during bootstrap.
+        for target_kind in ["uefi", "msvc"]:
+            for bootstrapping in [False, True]:
+                rust_toolchain(
+                    name = rust_toolchain_name + "_" + target_kind + ("_bootstrap" if bootstrapping else ""),
+                    bootstrapping = bootstrapping,
+                    process_wrapper = "@rules_rust//util/process_wrapper" + (":bootstrap_process_wrapper" if bootstrapping else ""),
+                    rust_std = rust_std_label if bootstrapping else toolchain_rust_std,
+                    **(rust_toolchain_kwargs | {
+                        "linker_preference": "rust",
+                        "linker": lld_label,
+                    } | ({
+                        # UEFI has no C/C++ allocator shim or weak symbol support.
+                        "allocator_library": "@rules_rust//rust/private/cc:empty",
+                        "global_allocator_library": "@rules_rust//rust/private/cc:empty",
+                    } if target_kind == "uefi" else {}))
+                )
 
         bpf_linker_label = _component(bpf_linker, triple, "@%s//:%s" % (bpf_linker_repository_name(triple), bpf_linker_binary_name(triple)))
         rust_toolchain(
@@ -307,10 +310,12 @@ def declare_rustc_toolchains(
             ("bpf", False),
             ("uefi", False),
             ("uefi", True),
+            ("msvc", False),
+            ("msvc", True),
         ]:
             bootstrap_suffix = "_bootstrap" if bootstrapping else ""
             bootstrap_setting = "@rules_rust//rust/private:" + ("bootstrapping" if bootstrapping else "bootstrapped")
-            toolchain_suffix = "_bpf" if target_kind == "bpf" else ("_uefi" if target_kind == "uefi" else "") + bootstrap_suffix
+            toolchain_suffix = "_bpf" if target_kind == "bpf" else ("_" + target_kind if target_kind in ["uefi", "msvc"] else "") + bootstrap_suffix
             native.toolchain(
                 name = name + "_{}_{}_to_{}_targets_{}{}".format(
                     exec_triple.system,
