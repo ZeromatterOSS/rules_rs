@@ -69,6 +69,8 @@ def _selection_test(triple, bootstrap = False, exec_triple = "x86_64-unknown-lin
                 str(Label(_PACKAGE + "narrow_linux_x86_64_to_non_bpf_targets_1_92_0_bootstrap")),
                 str(Label(_PACKAGE + "narrow_linux_x86_64_to_uefi_targets_1_92_0")),
                 str(Label(_PACKAGE + "narrow_linux_x86_64_to_uefi_targets_1_92_0_bootstrap")),
+                str(Label(_PACKAGE + "narrow_linux_x86_64_to_msvc_targets_1_92_0")),
+                str(Label(_PACKAGE + "narrow_linux_x86_64_to_msvc_targets_1_92_0_bootstrap")),
                 str(Label(_PACKAGE + "narrow_linux_x86_64_to_bpf_targets_1_92_0")),
             ],
         },
@@ -90,6 +92,7 @@ _uefi_bootstrap_test = _selection_test("x86_64-unknown-uefi", bootstrap = True)
 _windows_gnu_test = _selection_test("x86_64-pc-windows-gnu")
 _windows_gnullvm_test = _selection_test("x86_64-pc-windows-gnullvm")
 _windows_msvc_test = _selection_test("x86_64-pc-windows-msvc")
+_windows_msvc_bootstrap_test = _selection_test("x86_64-pc-windows-msvc", bootstrap = True)
 
 def _analyze_declarations_impl(_ctx):
     return []
@@ -163,7 +166,8 @@ def declare_rustc_toolchains_test_suite(name):
         ("uefi_bootstrap", _uefi_bootstrap_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust"}),
         ("windows_gnu", _windows_gnu_test, {"expected_dlltool": "llvm-dlltool"}),
         ("windows_gnullvm", _windows_gnullvm_test, {}),
-        ("windows_msvc", _windows_msvc_test, {}),
+        ("windows_msvc", _windows_msvc_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust"}),
+        ("windows_msvc_bootstrap", _windows_msvc_bootstrap_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust"}),
     ]:
         test_rule(
             name = test_name + "_test",
