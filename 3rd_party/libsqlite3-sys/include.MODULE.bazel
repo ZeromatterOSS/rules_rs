@@ -1,0 +1,10 @@
+crate = use_extension("@rules_rs//rs:extensions.bzl", "crate")
+
+# Resolve the bundled headers from the build script's execution environment.
+# Its compilation sandbox may no longer exist when dependents use the path.
+crate.annotation(
+    crate = "libsqlite3-sys",
+    patch_args = ["-p1"],
+    patches = ["@rules_rs//:3rd_party/libsqlite3-sys/runtime-manifest-dir.patch"],
+    version = "0.30.1",
+)
