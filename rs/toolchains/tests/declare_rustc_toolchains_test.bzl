@@ -31,6 +31,8 @@ def _selection_test_impl(ctx):
     asserts.equals(env, ctx.attr.expected_exec_triple, toolchain.exec_triple.str)
     asserts.equals(env, ctx.attr.expected_edition, toolchain.default_edition)
     asserts.equals(env, ctx.attr.expected_bootstrap, toolchain._bootstrapping)
+    for mode, level in ctx.attr.expected_opt_level.items():
+        asserts.equals(env, level, toolchain.compilation_mode_opts[mode].opt_level)
     asserts.equals(env, ctx.attr.expected_linker_preference, toolchain.linker_preference or "")
     asserts.equals(env, ctx.attr.expected_linker, toolchain.linker.basename if toolchain.linker else "")
     asserts.equals(env, ctx.attr.expected_dlltool, toolchain.dlltool.basename if toolchain.dlltool else "")
@@ -52,6 +54,7 @@ def _selection_test(triple, bootstrap = False, exec_triple = "x86_64-unknown-lin
             "expected_exec_triple": attr.string(default = exec_triple),
             "expected_edition": attr.string(default = "2024"),
             "expected_bootstrap": attr.bool(default = bootstrap),
+            "expected_opt_level": attr.string_dict(),
             "expected_linker": attr.string(),
             "expected_dlltool": attr.string(),
             "expected_linker_preference": attr.string(),
@@ -120,6 +123,7 @@ def declare_rustc_toolchains_test_suite(name):
     declare_rustc_toolchains(
         name = "narrow",
         version = "1.92.0",
+        opt_level = {"dbg": "0", "fastbuild": "1", "opt": "3"},
         edition = "2024",
         cargo = {"x86_64-unknown-linux-gnu": ":custom_cargo"},
         exec_triples = ["x86_64-unknown-linux-gnu"],
@@ -151,11 +155,11 @@ def declare_rustc_toolchains_test_suite(name):
 
     tests = []
     for test_name, test_rule, kwargs in [
-        ("musl", _musl_test, {}),
+        ("musl", _musl_test, {"expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
         ("aarch64_musl", _aarch64_musl_test, {}),
         ("aarch64_exec_fallback", _aarch64_exec_test, {"expected_edition": "2021", "expected_cargo": "cargo"}),
-        ("gnu_fallback", _gnu_test, {"expected_edition": "2021", "expected_cargo": "cargo"}),
-        ("musl_bootstrap", _musl_bootstrap_test, {}),
+        ("gnu_fallback", _gnu_test, {"expected_edition": "2021", "expected_cargo": "cargo", "expected_opt_level": {"dbg": "0", "fastbuild": "0", "opt": "3"}}),
+        ("musl_bootstrap", _musl_bootstrap_test, {"expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
         ("gnu_bootstrap_fallback", _gnu_bootstrap_test, {"expected_edition": "2021", "expected_cargo": "cargo"}),
         ("bpfel", _bpfel_test, {"expected_linker": "bpf-linker", "expected_linker_preference": "rust"}),
         ("bpfeb_fallback", _bpfeb_test, {"expected_edition": "2021", "expected_cargo": "cargo", "expected_linker": "bpf-linker", "expected_linker_preference": "rust"}),
@@ -166,8 +170,8 @@ def declare_rustc_toolchains_test_suite(name):
         ("uefi_bootstrap", _uefi_bootstrap_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust"}),
         ("windows_gnu", _windows_gnu_test, {"expected_dlltool": "llvm-dlltool"}),
         ("windows_gnullvm", _windows_gnullvm_test, {}),
-        ("windows_msvc", _windows_msvc_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust"}),
-        ("windows_msvc_bootstrap", _windows_msvc_bootstrap_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust"}),
+        ("windows_msvc", _windows_msvc_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust", "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
+        ("windows_msvc_bootstrap", _windows_msvc_bootstrap_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust", "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
     ]:
         test_rule(
             name = test_name + "_test",

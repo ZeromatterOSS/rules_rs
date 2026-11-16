@@ -118,6 +118,23 @@ bazel mod deps --lockfile_mode=update
 The second command restores the normal environment before the updated lockfile
 is committed.
 
+### Optimization levels
+
+Configure optimization per Bazel compilation mode with the toolchain tag:
+
+```bzl
+toolchains.toolchain(
+    edition = "2024",
+    opt_level = {"dbg": "0", "fastbuild": "1", "opt": "3"},
+    version = "1.92.0",
+)
+```
+
+This mapping applies to target and execution configurations, including Cargo
+build scripts and their build dependencies. Supply all three modes when setting
+`opt_level`; omitting it keeps the `rules_rust` defaults. The same option is
+available on `declare_rustc_toolchains` for workspace-declared toolchains.
+
 ### Global Cargo configuration
 
 The root module can configure a shared Cargo configuration file for every Cargo closure, including closures declared by dependencies:

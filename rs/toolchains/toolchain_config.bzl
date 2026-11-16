@@ -7,6 +7,7 @@ def _config(tag):
         rustfmt_version = tag.rustfmt_version or tag.version,
         rust_analyzer_version = tag.rust_analyzer_version or tag.version,
         edition = tag.edition,
+        opt_level = tag.opt_level,
         extra_rustc_flags = tag.extra_rustc_flags,
         extra_exec_rustc_flags = tag.extra_exec_rustc_flags,
         use_rust_redist = tag.use_rust_redist,
@@ -27,7 +28,7 @@ def _stable_version_key(version):
     return tuple([int(part) for part in version.split(".")])
 
 def _merge_configs(a, b):
-    for attribute in ("extra_rustc_flags", "extra_exec_rustc_flags"):
+    for attribute in ("opt_level", "extra_rustc_flags", "extra_exec_rustc_flags"):
         if getattr(a, attribute) != getattr(b, attribute):
             fail("Toolchain repo %s has conflicting %s; configure it in the root module or use different toolchain repo names" % (a.name, attribute))
     return struct(
@@ -36,6 +37,7 @@ def _merge_configs(a, b):
         rustfmt_version = _highest_version(a.rustfmt_version, b.rustfmt_version, a.name, "rustfmt_version"),
         rust_analyzer_version = _highest_version(a.rust_analyzer_version, b.rust_analyzer_version, a.name, "rust_analyzer_version"),
         edition = max(a.edition, b.edition),
+        opt_level = a.opt_level,
         extra_rustc_flags = a.extra_rustc_flags,
         extra_exec_rustc_flags = a.extra_exec_rustc_flags,
         use_rust_redist = a.use_rust_redist and b.use_rust_redist,

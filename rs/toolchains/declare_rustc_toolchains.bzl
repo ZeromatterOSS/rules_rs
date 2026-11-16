@@ -33,6 +33,7 @@ def declare_rustc_toolchains(
         rustc = None,
         exec_triples = SUPPORTED_EXEC_TRIPLES,
         target_triples = ALL_TARGET_TRIPLES,
+        opt_level = {},
         extra_rustc_flags = {},
         extra_exec_rustc_flags = {},
         rust_doc = None,
@@ -58,6 +59,8 @@ def declare_rustc_toolchains(
         keys or all supported execution triples.
       target_triples: Nonempty list of supported target triples; defaults to all
         supported triples. Generated toolchains only match these target triples.
+      opt_level: Optional optimization levels keyed by dbg, fastbuild, and opt.
+        A nonempty map must provide all three modes. An empty map uses rules_rust defaults.
       extra_rustc_flags: Additional compiler flags keyed by target triple.
       extra_exec_rustc_flags: Additional compiler flags keyed by execution triple.
       rust_doc: Optional rustdoc label or labels keyed by execution triple.
@@ -252,6 +255,9 @@ def declare_rustc_toolchains(
             visibility = ["//visibility:public"],
             tags = ["manual", "rust_version=" + version],
         )
+
+        if opt_level:
+            rust_toolchain_kwargs["opt_level"] = opt_level
 
         rust_toolchain(
             name = rust_toolchain_name,

@@ -10,6 +10,7 @@ def _tag(**kwargs):
         edition = "2021",
         rustfmt_version = "",
         rust_analyzer_version = "",
+        opt_level = {},
         extra_rustc_flags = {},
         extra_exec_rustc_flags = {},
         use_rust_redist = True,
@@ -25,7 +26,7 @@ def _resolve(*modules):
 
 def _root_override_impl(ctx):
     env = unittest.begin(ctx)
-    root = _module(_tag(version = "1.85.0", edition = "2018"), is_root = True)
+    root = _module(_tag(version = "1.85.0", edition = "2018", opt_level = {"dbg": "0", "fastbuild": "1", "opt": "3"}), is_root = True)
     deps = [
         _module(_tag(version = "nightly/2026-01-01", extra_rustc_flags = {"*": ["-Zfoo"]}, use_rust_redist = False)),
         _module(_tag(version = "1.99.0", edition = "2024", rustfmt_version = "beta/2026-02-01")),
@@ -36,6 +37,7 @@ def _root_override_impl(ctx):
         asserts.equals(env, "2018", config.edition)
         asserts.equals(env, "1.85.0", config.rustfmt_version)
         asserts.equals(env, "1.85.0", config.rust_analyzer_version)
+        asserts.equals(env, {"dbg": "0", "fastbuild": "1", "opt": "3"}, config.opt_level)
         asserts.equals(env, {}, config.extra_rustc_flags)
         asserts.true(env, config.use_rust_redist)
     return unittest.end(env)
@@ -81,11 +83,12 @@ def _separate_names_impl(ctx):
 
 def _duplicate_tags_impl(ctx):
     env = unittest.begin(ctx)
-    tag = _tag(extra_exec_rustc_flags = {"*": ["-Copt-level=1"]})
-    explicit = _tag(rustfmt_version = tag.version, rust_analyzer_version = tag.version, extra_exec_rustc_flags = tag.extra_exec_rustc_flags)
+    tag = _tag(opt_level = {"dbg": "0", "fastbuild": "1", "opt": "3"}, extra_exec_rustc_flags = {"*": ["-Copt-level=1"]})
+    explicit = _tag(rustfmt_version = tag.version, rust_analyzer_version = tag.version, opt_level = tag.opt_level, extra_exec_rustc_flags = tag.extra_exec_rustc_flags)
     for is_root in [False, True]:
         config = _resolve(_module(tag, explicit, is_root = is_root))
         asserts.equals(env, tag.version, config.version)
+        asserts.equals(env, tag.opt_level, config.opt_level)
         asserts.equals(env, tag.extra_exec_rustc_flags, config.extra_exec_rustc_flags)
     return unittest.end(env)
 
@@ -140,6 +143,7 @@ def toolchain_config_tests(name):
         ("rustfmt", {"rustfmt_version": "beta/2026-01-01"}, False, "incomparable rustfmt_version values"),
         ("analyzer", {"rust_analyzer_version": "nightly/2026-01-01"}, False, "incomparable rust_analyzer_version values"),
         ("flags", {"extra_rustc_flags": {"*": ["-Copt-level=1"]}}, False, "conflicting extra_rustc_flags"),
+        ("opt_level", {"opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}, False, "conflicting opt_level"),
         ("exec_flags", {"extra_exec_rustc_flags": {"*": ["-Copt-level=1"]}}, False, "conflicting extra_exec_rustc_flags"),
     ]:
         target = name + "_" + suffix
