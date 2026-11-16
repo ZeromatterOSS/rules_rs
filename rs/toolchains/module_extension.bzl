@@ -91,6 +91,12 @@ _TOOLCHAIN_TAG = tag_class(
             doc = "Default edition to apply to toolchains.",
             default = _DEFAULT_EDITION,
         ),
+        "opt_level": attr.string_dict(
+            doc = "Rust optimization levels for dbg, fastbuild, and opt. When set, provide all three modes; otherwise rules_rust defaults apply.",
+        ),
+        "extra_rustc_flags_by_compilation_mode": attr.string_list_dict(
+            doc = "Additional rustc flags keyed by dbg, fastbuild, or opt, applied in target and execution configurations before per-triple flags.",
+        ),
         "extra_rustc_flags": attr.string_list_dict(
             doc = "Additional rustc flags by target triple.",
         ),
@@ -183,6 +189,8 @@ def _toolchains_impl(mctx):
             rustfmt_version = _DEFAULT_RUSTC_VERSION,
             rust_analyzer_version = _DEFAULT_RUSTC_VERSION,
             edition = _DEFAULT_EDITION,
+            opt_level = {},
+            extra_rustc_flags_by_compilation_mode = {},
             extra_rustc_flags = {},
             extra_exec_rustc_flags = {},
         )
@@ -529,6 +537,8 @@ def _toolchains_impl(mctx):
             rustfmt_version = tag.rustfmt_version,
             rust_analyzer_version = tag.rust_analyzer_version,
             edition = tag.edition,
+            opt_level = tag.opt_level,
+            extra_rustc_flags_by_compilation_mode = tag.extra_rustc_flags_by_compilation_mode,
             extra_rustc_flags = tag.extra_rustc_flags,
             extra_exec_rustc_flags = tag.extra_exec_rustc_flags,
             target_triples = stdlib_targets_by_version[tag.version] + SUPPORTED_TIER_3_TRIPLES,
