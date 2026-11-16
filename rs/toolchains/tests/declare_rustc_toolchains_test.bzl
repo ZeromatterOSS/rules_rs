@@ -31,6 +31,9 @@ def _selection_test_impl(ctx):
     asserts.equals(env, ctx.attr.expected_exec_triple, toolchain.exec_triple.str)
     asserts.equals(env, ctx.attr.expected_edition, toolchain.default_edition)
     asserts.equals(env, ctx.attr.expected_bootstrap, toolchain._bootstrapping)
+    if ctx.attr.expected_mode_flags:
+        for flags in [toolchain.extra_rustc_flags, toolchain.extra_exec_rustc_flags]:
+            asserts.equals(env, ctx.attr.expected_mode_flags, [flag for flag in flags if flag.startswith("--cfg=profile_")])
     for mode, level in ctx.attr.expected_opt_level.items():
         asserts.equals(env, level, toolchain.compilation_mode_opts[mode].opt_level)
     asserts.equals(env, ctx.attr.expected_linker_preference, toolchain.linker_preference or "")
@@ -46,7 +49,7 @@ def _selection_test_impl(ctx):
         asserts.equals(env, "", tc.iso_date)
     return analysistest.end(env)
 
-def _selection_test(triple, bootstrap = False, exec_triple = "x86_64-unknown-linux-gnu"):
+def _selection_test(triple, bootstrap = False, exec_triple = "x86_64-unknown-linux-gnu", compilation_mode = "fastbuild"):
     return analysistest.make(
         _selection_test_impl,
         attrs = {
@@ -55,6 +58,7 @@ def _selection_test(triple, bootstrap = False, exec_triple = "x86_64-unknown-lin
             "expected_edition": attr.string(default = "2024"),
             "expected_bootstrap": attr.bool(default = bootstrap),
             "expected_opt_level": attr.string_dict(),
+            "expected_mode_flags": attr.string_list(),
             "expected_linker": attr.string(),
             "expected_dlltool": attr.string(),
             "expected_linker_preference": attr.string(),
@@ -62,6 +66,7 @@ def _selection_test(triple, bootstrap = False, exec_triple = "x86_64-unknown-lin
         },
         config_settings = {
             _PLATFORM: str(Label("//rs/platforms:" + triple)),
+            "//command_line_option:compilation_mode": compilation_mode,
             _BOOTSTRAP: bootstrap,
             # Analyze BPF toolchain selection without building its source stdlib.
             _SOURCE_STDLIB: True,
@@ -80,6 +85,10 @@ def _selection_test(triple, bootstrap = False, exec_triple = "x86_64-unknown-lin
     )
 
 _musl_test = _selection_test("x86_64-unknown-linux-musl")
+_musl_dbg_test = _selection_test("x86_64-unknown-linux-musl", compilation_mode = "dbg")
+_musl_opt_test = _selection_test("x86_64-unknown-linux-musl", compilation_mode = "opt")
+_musl_dbg_bootstrap_test = _selection_test("x86_64-unknown-linux-musl", bootstrap = True, compilation_mode = "dbg")
+_musl_opt_bootstrap_test = _selection_test("x86_64-unknown-linux-musl", bootstrap = True, compilation_mode = "opt")
 _aarch64_musl_test = _selection_test("aarch64-unknown-linux-musl")
 _aarch64_exec_test = _selection_test("aarch64-unknown-linux-musl", exec_triple = "aarch64-unknown-linux-gnu")
 _gnu_test = _selection_test("x86_64-unknown-linux-gnu")
@@ -124,6 +133,11 @@ def declare_rustc_toolchains_test_suite(name):
         name = "narrow",
         version = "1.92.0",
         opt_level = {"dbg": "0", "fastbuild": "1", "opt": "3"},
+        extra_rustc_flags_by_compilation_mode = {
+            "dbg": ["--cfg=profile_dbg"],
+            "fastbuild": ["--cfg=profile_fastbuild"],
+            "opt": ["--cfg=profile_opt"],
+        },
         edition = "2024",
         cargo = {"x86_64-unknown-linux-gnu": ":custom_cargo"},
         exec_triples = ["x86_64-unknown-linux-gnu"],
@@ -155,11 +169,15 @@ def declare_rustc_toolchains_test_suite(name):
 
     tests = []
     for test_name, test_rule, kwargs in [
-        ("musl", _musl_test, {"expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
+        ("musl", _musl_test, {"expected_mode_flags": ["--cfg=profile_fastbuild"], "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
+        ("musl_dbg", _musl_dbg_test, {"expected_mode_flags": ["--cfg=profile_dbg"]}),
+        ("musl_opt", _musl_opt_test, {"expected_mode_flags": ["--cfg=profile_opt"]}),
+        ("musl_dbg_bootstrap", _musl_dbg_bootstrap_test, {"expected_mode_flags": ["--cfg=profile_dbg"]}),
+        ("musl_opt_bootstrap", _musl_opt_bootstrap_test, {"expected_mode_flags": ["--cfg=profile_opt"]}),
         ("aarch64_musl", _aarch64_musl_test, {}),
         ("aarch64_exec_fallback", _aarch64_exec_test, {"expected_edition": "2021", "expected_cargo": "cargo"}),
         ("gnu_fallback", _gnu_test, {"expected_edition": "2021", "expected_cargo": "cargo", "expected_opt_level": {"dbg": "0", "fastbuild": "0", "opt": "3"}}),
-        ("musl_bootstrap", _musl_bootstrap_test, {"expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
+        ("musl_bootstrap", _musl_bootstrap_test, {"expected_mode_flags": ["--cfg=profile_fastbuild"], "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
         ("gnu_bootstrap_fallback", _gnu_bootstrap_test, {"expected_edition": "2021", "expected_cargo": "cargo"}),
         ("bpfel", _bpfel_test, {"expected_linker": "bpf-linker", "expected_linker_preference": "rust"}),
         ("bpfeb_fallback", _bpfeb_test, {"expected_edition": "2021", "expected_cargo": "cargo", "expected_linker": "bpf-linker", "expected_linker_preference": "rust"}),
@@ -170,8 +188,8 @@ def declare_rustc_toolchains_test_suite(name):
         ("uefi_bootstrap", _uefi_bootstrap_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust"}),
         ("windows_gnu", _windows_gnu_test, {"expected_dlltool": "llvm-dlltool"}),
         ("windows_gnullvm", _windows_gnullvm_test, {}),
-        ("windows_msvc", _windows_msvc_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust", "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
-        ("windows_msvc_bootstrap", _windows_msvc_bootstrap_test, {"expected_linker": "rust-lld", "expected_linker_preference": "rust", "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
+        ("windows_msvc", _windows_msvc_test, {"expected_mode_flags": ["--cfg=profile_fastbuild"], "expected_linker": "rust-lld", "expected_linker_preference": "rust", "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
+        ("windows_msvc_bootstrap", _windows_msvc_bootstrap_test, {"expected_mode_flags": ["--cfg=profile_fastbuild"], "expected_linker": "rust-lld", "expected_linker_preference": "rust", "expected_opt_level": {"dbg": "0", "fastbuild": "1", "opt": "3"}}),
     ]:
         test_rule(
             name = test_name + "_test",

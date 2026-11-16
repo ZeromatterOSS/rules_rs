@@ -15,9 +15,9 @@ def _channel(version):
         return "beta"
     return "stable"
 
-def _rustc_flags_to_select(rustc_flags_by_triple):
+def _rustc_flags_to_select(rustc_flags_by_config, prefix = "@rules_rs//rs/platforms/config:"):
     return select(
-        {"@rules_rs//rs/platforms/config:" + triple: flags for triple, flags in rustc_flags_by_triple.items()} |
+        {prefix + key: flags for key, flags in rustc_flags_by_config.items()} |
         {"//conditions:default": []},
     )
 
@@ -34,6 +34,7 @@ def declare_rustc_toolchains(
         exec_triples = SUPPORTED_EXEC_TRIPLES,
         target_triples = ALL_TARGET_TRIPLES,
         opt_level = {},
+        extra_rustc_flags_by_compilation_mode = {},
         extra_rustc_flags = {},
         extra_exec_rustc_flags = {},
         rust_doc = None,
@@ -61,6 +62,8 @@ def declare_rustc_toolchains(
         supported triples. Generated toolchains only match these target triples.
       opt_level: Optional optimization levels keyed by dbg, fastbuild, and opt.
         A nonempty map must provide all three modes. An empty map uses rules_rust defaults.
+      extra_rustc_flags_by_compilation_mode: Additional flags keyed by dbg,
+        fastbuild, or opt, prepended to per-triple target and execution flags.
       extra_rustc_flags: Additional compiler flags keyed by target triple.
       extra_exec_rustc_flags: Additional compiler flags keyed by execution triple.
       rust_doc: Optional rustdoc label or labels keyed by execution triple.
@@ -76,6 +79,11 @@ def declare_rustc_toolchains(
     """
     if not target_triples:
         fail("target_triples must not be empty")
+
+    mode_flags = _rustc_flags_to_select(
+        extra_rustc_flags_by_compilation_mode,
+        prefix = "@rules_rust//cargo/private:compilation_mode_",
+    )
 
     if type(rustc) == "dict":
         for exec_triple in rustc:
@@ -248,8 +256,8 @@ def declare_rustc_toolchains(
                 "//conditions:default": [],
             }),
             default_edition = edition,
-            extra_exec_rustc_flags = _rustc_flags_to_select(extra_exec_rustc_flags),
-            extra_rustc_flags = _rustc_flags_to_select(extra_rustc_flags),
+            extra_exec_rustc_flags = mode_flags + _rustc_flags_to_select(extra_exec_rustc_flags),
+            extra_rustc_flags = mode_flags + _rustc_flags_to_select(extra_rustc_flags),
             exec_triple = triple,
             target_triple = select(target_triple_select),
             visibility = ["//visibility:public"],
